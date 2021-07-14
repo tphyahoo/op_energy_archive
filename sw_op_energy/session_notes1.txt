@@ -1,0 +1,114 @@
+## Notes for oetool
+##  01Nov2020    dbb
+
+--
+$ ipython
+
+In [1]: import sqlite3
+
+In [2]: conn = sqlite3.connect('test0.sqlite3')
+
+In [3]: conn
+Out[3]: <sqlite3.Connection at 0x7f11f95526c0>
+
+
+In [9]: tSQL = '''
+   ...: CREATE TABLE
+   ...: oetable_test0 (
+   ...:   oe_hash  text PRIMARY KEY,  -- 64 hax digits
+   ...:   oe_time text, -- iso format
+   ...:   oe_version text, -- always 0x20000000
+   ...:   oe_blockreward float -- in BTC 
+   ...: )
+   ...: '''
+
+In [10]: conn.execute(tSQL)
+Out[10]: <sqlite3.Cursor at 0x7f11fa3370a0>
+
+In [11]: tSQL_bb = '''
+    ...: INSERT into oetable_test0 VALUES(
+    ...: '0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca88',
+    ...: '2020-11-02 20:03:00',
+    ...: '0x20000000',
+    ...: 6.25 )
+    ...: '''
+
+In [12]: conn.execute(tSQL_bb)
+Out[12]: <sqlite3.Cursor at 0x7f11f8422b90>
+
+In [13]: conn.commit()
+
+In [14]: tSQL_jj = '''
+    ...: SELECT * from oetable_test0
+    ...: '''
+
+...
+
+In [26]: res = conn.execute(tSQL_jj)
+
+In [27]: res.fetchall()
+Out[27]: 
+[(u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca88',
+  u'2020-11-02 20:03:00',
+  u'0x20000000',
+  6.25),
+ (u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca80',
+  u'2020-11-02 20:04:00',
+  u'0x20000000',
+  3.5),
+ (u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca65',
+  u'2020-11-02 20:05:00',
+  u'0x20000000',
+  5.06),
+ (u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca44',
+  u'2020-11-02 20:06:00',
+  u'0x20000000',
+  4.44)]
+
+===================================
+--
+In [1]: import sqlite3
+
+In [2]: conn = sqlite3.connect('test0.sqlite3')
+
+In [3]: tSQL_jj = 'select * from oetable_test0'
+
+In [4]: conn.execute(tSQL_jj)
+Out[4]: <sqlite3.Cursor at 0x7f5fa7d34810>
+
+In [5]: curs = conn.execute(tSQL_jj)
+
+In [6]: curs.fetchall()
+Out[6]: 
+[(u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca88',
+  u'2020-11-02 20:03:00',
+  u'0x20000000',
+  6.25),
+ (u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca80',
+  u'2020-11-02 20:04:00',
+  u'0x20000000',
+  3.5),
+ (u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca65',
+  u'2020-11-02 20:05:00',
+  u'0x20000000',
+  5.06),
+ (u'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca44',
+  u'2020-11-02 20:06:00',
+  u'0x20000000',
+  4.44)]
+
+
+In [15]: res = conn.execute( tSQL_getrec %'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca88'
+    ...: )
+
+In [16]: res.fetchall()
+Out[16]: [(6.25,)]
+
+In [17]: res = conn.execute( tSQL_getrec %'0000000000000000000073280c6c10e891cff6ac303d1b0d1a13bf661e01ca44'
+    ...: )
+
+In [18]: res.fetchall()
+Out[18]: [(4.44,)]
+
+
+

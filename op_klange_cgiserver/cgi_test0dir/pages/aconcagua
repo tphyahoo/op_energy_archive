@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+
+#  aconcagua   -- return form
+#  aconcagua?
+#    idBeg   span  idEnd  mimetype  chartopts
+#--
+
+import os, sys
+import json, re, random
+
+##--  CGI spec uses env variable QUERY_STRING
+#
+
+try:
+  resQryStr = os.getenv('QUERY_STRING' )
+except:
+  print( 'FAIL:',sys.argv)
+  sys.exit(-1)
+
+
+##-------------------------------------------------------
+form_Header = '''
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Calculate Hashes per Satoshi</title>
+  </head>
+  <body>
+    <h3> alpha build cgi interface </h3>
+    <br>
+
+'''
+
+form_BA = '''
+    pic<br>
+    <hr size="2" width="100%"> <br>
+    <form action="calcops_c3.cgi" method="get" class="form-example">
+      <div class="form-example"> <label for="name">Start Block: </label>
+        <input name="idBeg" id="idBeg" required="" maxlength="6"> </div>
+      <div class="form-example"> <label for="span"> &nbsp; span: &nbsp;
+          &nbsp; </label> <input name="span" id="span" required=""
+          maxlength="6"> </div>
+      <div class="form-example"> <label for="idEnd">End Block: </label>
+        <input name="idEnd" id="idEnd" required="" maxlength="6"> </div>
+      <br>
+      <input id="makeChart" name="makeChart" value="Chart"
+        type="checkbox"> <label for="makeChart"> Chart the csv results
+        below</label> <br>
+      <br>
+      <div class="form-example"> <input value="Calculate OP_ENERGY" type="submit">
+      </div>
+    </form>
+    <br>
+    <hr size="2" width="100%"> csv<br>
+    <br>
+
+'''
+
+form_Trailer = '''
+  </body>
+</html>
+
+'''
+
+
+def do_form():
+  print( form_Header )
+  print( form_BA )
+  print( form_Trailer )
+
+
+##-------------------------------
+if resQryStr is None:
+  do_form()
+  exit(0)
+
+tD = {}
+arg_list = resQryStr.split('&')
+for elem in arg_list:
+    res_t = elem.split('=')
+    if len(res_t) < 2:  break
+    tD[res_t[0]] = res_t[1]
+
+
+if len(tD.keys()) == 0:
+  do_form()
+  exit(0)
+
+
+##------------------------------
+
+dst_file = '/tmp/res3_{}-{}-{}.csv'.format( tD['idBeg'], tD['span'], tD['idEnd'] )
+
+
+if ( not os.path.isfile(dst_file) ):
+
+  ## PG connect and query
+  ## rely on a script-built postgresql database -  btc_op_energy
+  PGPORT=5432
+  import psycopg2 as pg
+  try:
+    conn  = pg.connect("dbname=btc_op_energy port="+str(PGPORT))
+    curs = conn.cursor()
+  except pg.OperationalError as e:
+    print('#psycopg2: '+str(e))
+    sys.exit(-1)
+
+  tSQL_pre = '''  COPY
+  (SELECT calcops_28( a.blkheight, a.median_time, a.chain_reward, a.chainwork_hex,
+                     b.blkheight, b.median_time, b.chain_reward, b.chainwork_hex),
+                     b.blkheight, b.median_time
+  FROM data_chain as a, data_chain as b  WHERE
+    a.blkheight > %s AND a.blkheight %% %s = 0  AND  a.blkheight < %s AND
+    b.blkheight = (a.blkheight+%s)  AND b.median_time <> a.median_time ) to
+
+  '''
+  tSQL_post = '''
+    with CSV header ;
+  '''
+  tSQL = tSQL_pre+"'"+dst_file+"'"+tSQL_post
+  #tSQL = tSQL_pre
+
+  try:
+    res = curs.execute(tSQL,( tD['idBeg'], tD['span'], tD['idEnd'], tD['span'] ))
+
+  except pg.Error as e:
+    print( str(e) )
+    print('FAIL SQL', curs.query)
+    print( 'qry ',resQryStr )
+    print( 'dict ',str(tD))
+    sys.exit(-1)
+
+  #print(curs.fetchall())
+
+
+
+
+
+
